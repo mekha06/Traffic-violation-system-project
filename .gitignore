@@ -1,0 +1,40 @@
+# ── .NET ──
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+.vs/
+*.DotSettings.user
+out/
+publish/
+Uploads/
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+.eggs/
+venv/
+.venv/
+env/
+
+# ── IDE ──
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Docker ──
+.dockerignore
+
+# ── Environment ──
+.env
+*.env.local

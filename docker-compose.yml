@@ -1,0 +1,63 @@
+# ── Docker Compose ──
+# Runs all three services together: SQL Server, .NET API, Python Vision Service
+# Usage: docker-compose up --build
+
+version: '3.8'
+
+services:
+  # ── SQL Server ──
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: traffic-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Password123
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "YourStrong@Password123" -Q "SELECT 1" -C -b
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Python Vision Service (OCR) ──
+  vision-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.vision
+    container_name: traffic-vision
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── .NET Web API ──
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: traffic-api
+    ports:
+      - "5219:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=TrafficViolationDb;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True;
+      - VisionService__BaseUrl=http://vision-service:8000
+      - Gemini__ApiKey=YOUR_GEMINI_API_KEY_HERE
+      - Gemini__Model=gemini-2.0-flash
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      vision-service:
+        condition: service_healthy
+    volumes:
+      - api-uploads:/app/Uploads
+
+volumes:
+  sqlserver-data:
+  api-uploads:
